@@ -5,6 +5,9 @@ const morgan = require("morgan");
 
 const noteRoutes = require("./routes/note.routes");
 
+const notFound = require("./middlewares/notFound.middleware");
+const errorHandler = require("./middlewares/error.middleware");
+
 const app = express();
 
 app.use(helmet());
@@ -23,5 +26,9 @@ app.get("/", (req, res) => {
 });
 
 app.use("/api/notes", noteRoutes);
+
+app.use(notFound);
+
+app.use(errorHandler);
 
 module.exports = app;

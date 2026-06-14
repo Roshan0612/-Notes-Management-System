@@ -6,14 +6,12 @@ const {
   createNote,
   updateNote,
   deleteNote,
-  searchNotes
+  
 } = require("../controllers/note.controller");
 
 const router = express.Router();
 
 router.get("/", getAllNotes);
-
-router.get("/search", searchNotes);
 
 router.get("/:id", getSingleNote);
 

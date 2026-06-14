@@ -1,18 +1,38 @@
 const Note = require("../models/note.model");
 const asyncHandler = require("../utils/asyncHandler");
 
-const getAllNotes = asyncHandler(async (req, res) => {
-  const notes = await Note.find().sort({
-    pinned: -1,
-    updatedAt: -1
-  });
+const getAllNotes = async (req, res) => {
+  try {
+    const search = req.query.search || "";
 
-  res.status(200).json({
-    success: true,
-    count: notes.length,
-    data: notes
-  });
-});
+    const notes = await Note.find({
+      $or: [
+        {
+          title: {
+            $regex: search,
+            $options: "i"
+          }
+        },
+        {
+          content: {
+            $regex: search,
+            $options: "i"
+          }
+        }
+      ]
+    }).sort({ updatedAt: -1 });
+
+    res.status(200).json({
+      success: true,
+      data: notes
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch notes"
+    });
+  }
+};
 
 const getSingleNote = asyncHandler(async (req, res) => {
   const note = await Note.findById(req.params.id);
@@ -31,7 +51,7 @@ const getSingleNote = asyncHandler(async (req, res) => {
 });
 
 const createNote = asyncHandler(async (req, res) => {
-  const { title, content, tags } = req.body;
+  const { title, content, tags, pinned } = req.body;
 
   if (!title || !title.trim()) {
     return res.status(400).json({
@@ -43,7 +63,8 @@ const createNote = asyncHandler(async (req, res) => {
   const note = await Note.create({
     title,
     content,
-    tags
+    tags,
+    pinned
   });
 
   res.status(201).json({
@@ -57,7 +78,13 @@ const updateNote = asyncHandler(async (req, res) => {
   const { title, content, tags, pinned } = req.body;
 
   const note = await Note.findById(req.params.id);
-
+  
+  if (title !== undefined && !title.trim()) {
+    return res.status(400).json({
+      success: false,
+      message: "Title is required"
+    });
+  }
   if (!note) {
     return res.status(404).json({
       success: false,
@@ -97,47 +124,11 @@ const deleteNote = asyncHandler(async (req, res) => {
   });
 });
 
-const searchNotes = asyncHandler(async (req, res) => {
-  const query = req.query.q || "";
-
-  const notes = await Note.find({
-    $or: [
-      {
-        title: {
-          $regex: query,
-          $options: "i"
-        }
-      },
-      {
-        content: {
-          $regex: query,
-          $options: "i"
-        }
-      },
-      {
-        tags: {
-          $regex: query,
-          $options: "i"
-        }
-      }
-    ]
-  }).sort({
-    pinned: -1,
-    updatedAt: -1
-  });
-
-  res.status(200).json({
-    success: true,
-    count: notes.length,
-    data: notes
-  });
-});
-
 module.exports = {
   getAllNotes,
   getSingleNote,
   createNote,
   updateNote,
   deleteNote,
-  searchNotes
+  
 };
